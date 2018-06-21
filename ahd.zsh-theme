@@ -1,3 +1,4 @@
+#!/bin/zsh
 # README
 #
 # In order for this theme to render correctly, you will need a
@@ -18,29 +19,46 @@ VIRTUAL_ENV_DISABLE_PROMPT=true
 # Define order and content of prompt
 if [ ! -n "${BULLETTRAIN_PROMPT_ORDER+1}" ]; then
   BULLETTRAIN_PROMPT_ORDER=(
-    time
-    status
-    custom
-    context
-    dir
-    screen
-    perl
-    ruby
-    virtualenv
-    nvm
-    aws
-    go
-    rust
-    elixir
-    git
-    hg
-    cmd_exec_time
+      time
+      cmd_exec_time
+#      context
+
+      indicators
+      dir
+#      git
+      status
+      custom
+      screen
+      pwd-df
+      kernel
+
   )
 fi
 
+# inddicatorw
+COLOR_PWD_R=229
+COLOR_PWD_W=209
+COLOR_PWD_O=39
+
+BARS=(▁
+      ▂
+      ▃
+      ▄
+      ▅
+      ▆
+      ▇
+      █
+     )
+
+print_bar() {
+    local value=$1
+    
+}
+
+
 # PROMPT
 if [ ! -n "${BULLETTRAIN_PROMPT_CHAR+1}" ]; then
-  BULLETTRAIN_PROMPT_CHAR="\$"
+  BULLETTRAIN_PROMPT_CHAR=""
 fi
 if [ ! -n "${BULLETTRAIN_PROMPT_ROOT+1}" ]; then
   BULLETTRAIN_PROMPT_ROOT=true
@@ -54,21 +72,21 @@ fi
 
 # STATUS
 if [ ! -n "${BULLETTRAIN_STATUS_EXIT_SHOW+1}" ]; then
-  BULLETTRAIN_STATUS_EXIT_SHOW=false
+  BULLETTRAIN_STATUS_EXIT_SHOW=true
 fi
 if [ ! -n "${BULLETTRAIN_STATUS_BG+1}" ]; then
   BULLETTRAIN_STATUS_BG=green
 fi
 if [ ! -n "${BULLETTRAIN_STATUS_ERROR_BG+1}" ]; then
-  BULLETTRAIN_STATUS_ERROR_BG=red
+  BULLETTRAIN_STATUS_ERROR_BG=210
 fi
 if [ ! -n "${BULLETTRAIN_STATUS_FG+1}" ]; then
-  BULLETTRAIN_STATUS_FG=white
+  BULLETTRAIN_STATUS_FG=black
 fi
 
 # TIME
 if [ ! -n "${BULLETTRAIN_TIME_BG+1}" ]; then
-  BULLETTRAIN_TIME_BG=white
+  BULLETTRAIN_TIME_BG=45
 fi
 if [ ! -n "${BULLETTRAIN_TIME_FG+1}" ]; then
   BULLETTRAIN_TIME_FG=black
@@ -175,21 +193,21 @@ fi
 
 # DIR
 if [ ! -n "${BULLETTRAIN_DIR_BG+1}" ]; then
-  BULLETTRAIN_DIR_BG=blue
+  BULLETTRAIN_DIR_BG=39
 fi
 if [ ! -n "${BULLETTRAIN_DIR_FG+1}" ]; then
-  BULLETTRAIN_DIR_FG=white
+  BULLETTRAIN_DIR_FG=black
 fi
 if [ ! -n "${BULLETTRAIN_DIR_CONTEXT_SHOW+1}" ]; then
   BULLETTRAIN_DIR_CONTEXT_SHOW=false
 fi
 if [ ! -n "${BULLETTRAIN_DIR_EXTENDED+1}" ]; then
-  BULLETTRAIN_DIR_EXTENDED=1
+  BULLETTRAIN_DIR_EXTENDED=2
 fi
 
 # GIT
 if [ ! -n "${BULLETTRAIN_GIT_COLORIZE_DIRTY+1}" ]; then
-  BULLETTRAIN_GIT_COLORIZE_DIRTY=false
+  BULLETTRAIN_GIT_COLORIZE_DIRTY=true
 fi
 if [ ! -n "${BULLETTRAIN_GIT_COLORIZE_DIRTY_FG_COLOR+1}" ]; then
   BULLETTRAIN_GIT_COLORIZE_DIRTY_FG_COLOR=black
@@ -223,10 +241,10 @@ fi
 
 # CONTEXT
 if [ ! -n "${BULLETTRAIN_CONTEXT_BG+1}" ]; then
-  BULLETTRAIN_CONTEXT_BG=black
+  BULLETTRAIN_CONTEXT_BG=195
 fi
 if [ ! -n "${BULLETTRAIN_CONTEXT_FG+1}" ]; then
-  BULLETTRAIN_CONTEXT_FG=default
+  BULLETTRAIN_CONTEXT_FG=black
 fi
 if [ ! -n "${BULLETTRAIN_CONTEXT_HOSTNAME+1}" ]; then
   BULLETTRAIN_CONTEXT_HOSTNAME=%m
@@ -366,12 +384,33 @@ prompt_end() {
 # Context: user@hostname (who am I and where am I)
 context() {
   local user="$(whoami)"
-  [[ "$user" != "$BULLETTRAIN_CONTEXT_DEFAULT_USER" || -n "$BULLETTRAIN_IS_SSH_CLIENT" ]] && echo -n "${user}@$BULLETTRAIN_CONTEXT_HOSTNAME"
+  
+  [[ ${user} == root ]] && FGMOD_USER="%{%F{0}%}"
+
+# 25
+  [[ ${user} == ahd ]] && FGMOD_USER="%{%F{0}%}"
+
+  #  BGMOD_USER="%{%K{217}%}"
+  #  [[ $BULLETTRAIN_CONTEXT_HOSTNAME == "badwolf" ]] &&
+  FGMOD_HOST="%{%F{0}%}"
+  #  BGMOD_HOST="%{%K{217}%}"
+  # "{%K{253}%" 
+  
+  [[ "$user" != "$BULLETTRAIN_CONTEXT_DEFAULT_USER" || -n "$BULLETTRAIN_IS_SSH_CLIENT" ]] && echo -n "$BGMOD_USER$FGMOD_USER${user}$FGMOD_HOST$BGMOD_HOST@$BULLETTRAIN_CONTEXT_HOSTNAME"
+#  SEGMENT_SEPARATOR=''
+  
+#  SEGMENT_SEPARATOR=''
 }
 
 prompt_context() {
   local _context="$(context)"
-  [[ -n "$_context" ]] && prompt_segment $BULLETTRAIN_CONTEXT_BG $BULLETTRAIN_CONTEXT_FG "$_context"
+  local BG=$BULLETTRAIN_CONTEXT_BG
+
+  [[ $(whoami) == "root" ]] && BG=217
+  
+  [[ -n "$_context" ]] && prompt_segment $BG $BULLETTRAIN_CONTEXT_FG "$_context"
+
+  
 }
 
 # Based on http://stackoverflow.com/a/32164707/3859566
@@ -490,8 +529,9 @@ prompt_dir() {
     #medium directories (default case)
     dir="${dir}%4(c:...:)%3c"
   fi
-
+  SEGMENT_SEPARATOR='%:'
   prompt_segment $BULLETTRAIN_DIR_BG $BULLETTRAIN_DIR_FG $dir
+  SEGMENT_SEPARATOR=''
 }
 
 # RUBY
@@ -632,14 +672,66 @@ prompt_status() {
 
 }
 
+prompt_kernel() {
+    local kernel=$(uname -smr|cut -f2 -d' ')
+
+    prompt_segment 240 0 $kernel
+    
+}
+
+prompt_pwd-df() {
+    GLYPH_DISK="⛃"
+    pwd_des="$(basename $(df "${PWD}" | grep -v 'Filesystem ' | awk '{print $1}') | cut -f1 -d':'):"
+    pwd_use="$(df "${PWD}" | grep -v 'Filesystem ' | awk '{print $5}' | cut -f1 -d'%')"
+
+#    PWD_DF="${pwd_des}:"
+    PWD_DF+="${GLYPH_DISK}${pwd_des}:${pwd_use}"
+
+    
+
+
+    (( ${pwd_use} > 85 )) && PWD_COL=201
+    #    (( ${pwd_use} <= 85 )) && PWD_COL=210
+    (( ${pwd_use} <= 85 )) && PWD_COL=217
+    (( ${pwd_use} <= 75 )) && PWD_COL=227
+    (( ${pwd_use} <= 50 )) && PWD_COL=157
+    pwd_use+="%%"
+
+    prompt_segment $PWD_COL 0 "${pwd_des} ${pwd_use}"
+}
+
+prompt_indicators() {
+    # pwd/rw
+    local col_pwd=${COLOR_PWD_R}
+    [[ -w $PWD ]] && col_pwd=${COLOR_PWD_W}
+    [[ -O $PWD ]] && col_pwd=${COLOR_PWD_O}
+    prompt_segment ${col_pwd} 0 "RW"
+
+}
+
+prompt_indi_ssh() {
+    local remote_connection
+    if  [[ -n $SSH_TTY ]]; then
+	 remote_connection="Σ"
+	 prompt_segment 229 0 $remote_connection
+    fi
+       
+    
+}
+
 # Prompt Character
 prompt_chars() {
   local bt_prompt_chars="${BULLETTRAIN_PROMPT_CHAR}"
 
-  if [[ $BULLETTRAIN_PROMPT_ROOT == true ]]; then
-    bt_prompt_chars="%(!.%F{red}# .%F{green}${bt_prompt_chars}%f)"
-  fi
+#  if [[ $BULLETTRAIN_PROMPT_ROOT == true ]]; then
+#    bt_prompt_chars="%(!.%F{red}# .%F{green}${bt_prompt_chars}%f)"
+#  fi
 
+  prompt_indi_ssh
+  prompt_context
+  prompt_end
+  echo -n " "
+  
   if [[ $BULLETTRAIN_PROMPT_SEPARATE_LINE == false ]]; then
     bt_prompt_chars="${bt_prompt_chars}"
   fi
